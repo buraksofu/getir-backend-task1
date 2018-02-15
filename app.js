@@ -1,18 +1,38 @@
-const yargs = require("yargs");
+const bodyParser = require("body-parser");
 const express = require("express");
-const port = process.env.PORT || 3000;
-
 const mongoose = require("mongoose");
+
+const port = process.env.PORT || 3000;
+const query = require("./query");
+
+const app = express();
+
+mongoose.Promise = global.Promise;
 mongoose.connect(
   "mongodb://dbUser:dbPassword@ds155428.mlab.com:55428/getir-bitaksi-hackathon"
 );
 
-var app = express();
+const Schema = new mongoose.Schema({ any: mongoose.Schema.Types.Mixed });
+const Record = mongoose.model("Record", Schema);
 
-app.use(express.static(__dirname + "/public"));
+app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: true
+  })
+);
 
 app.get("/", (req, res) => {
-  res.send("Hello from express server!");
+  res.send("Please send POST request to /searchRecord");
+});
+
+app.post("/searchRecord", async (req, res) => {
+  try {
+    const records = await Record.aggregate(query(req.body));
+    res.json({ code: 0, msg: "Success", records });
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 app.listen(port, () => {
